@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 text-white p-6 hidden md:block">
+            <h1 class="text-2xl font-bold mb-8">SaaS Escolar</h1>
+            <nav>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Dashboard</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Estudiantes</a>
+                <a href="#" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">Reportes</a>
+            </nav>
+            <button onclick="logout()" class="absolute bottom-6 bg-red-600 px-4 py-2 rounded hover:bg-red-700 w-52">Cerrar Sesión</button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-10 overflow-y-auto">
+            <h2 class="text-3xl font-bold mb-8">Panel de Administración</h2>
+
+            <!-- Reportes y Gráficas -->
+            <section id="reports-section">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg mb-4">Promedio de Notas por Materia</h3>
+                        <canvas id="gradesChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="font-bold text-lg mb-4">Distribución de Pagos</h3>
+                        <canvas id="paymentsChart"></canvas>
+                    </div>
+                </div>
+                <button onclick="generatePDF()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition duration-200">
+                    Descargar Reporte PDF
+                </button>
+            </section>
+
+            <!-- Gestión (simplificado para este ejemplo) -->
+            <section id="management-section" class="mt-10 bg-white p-6 rounded-lg shadow-md">
+                 <h3 class="text-xl font-bold mb-4 text-blue-600">Registrar Estudiante</h3>
+                 <div class="space-y-3">
+                    <input id="student-name" placeholder="Nombre completo" class="w-full p-2 border rounded">
+                    <input id="student-grade" placeholder="Grado/Curso" class="w-full p-2 border rounded">
+                    <input id="student-email" placeholder="Email Apoderado" class="w-full p-2 border rounded">
+                    <button onclick="addStudent()" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-500">Registrar</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3003';
+        let statsData = {};
+
+        function getToken() {
+            const token = localStorage.getItem('token');
+            if (!token) window.location.href = 'index.html';
+            return token;
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'index.html';
+        }
+
+        async function fetchData(endpoint) {
+            const response = await fetch(`${API_URL}/${endpoint}`, {
+                headers: { 'auth-token': getToken() }
+            });
+            if (!response.ok) throw new Error(await response.text());
+            return await response.json();
+        }
+
+        async function initializeDashboard() {
+            try {
+                statsData = await fetchData('reports/stats');
+                renderCharts();
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+                alert("Error al cargar el dashboard. Serás redirigido al login.");
+                logout();
+            }
+        }
+
+        function renderCharts() {
+            // Gráfica de Barras - Notas
+            const gradesCtx = document.getElementById('gradesChart').getContext('2d');
+            new Chart(gradesCtx, {
+                type: 'bar',
+                data: {
+                    labels: statsData.grades_avg.map(g => g.subject),
+                    datasets: [{
+                        label: 'Promedio de Nota',
+                        data: statsData.grades_avg.map(g => parseFloat(g.average)),
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)'
+                    }]
+                }
+            });
+
+            // Gráfica de Torta - Pagos
+            const paymentsCtx = document.getElementById('paymentsChart').getContext('2d');
+            new Chart(paymentsCtx, {
+                type: 'pie',
+                data: {
+                    labels: statsData.payments_distribution.map(p => p.status),
+                    datasets: [{
+                        data: statsData.payments_distribution.map(p => p.count),
+                        backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)']
+                    }]
+                }
+            });
+        }
+
+        async function addStudent() {
+            const name = document.getElementById('student-name').value;
+            const grade = document.getElementById('student-grade').value;
+            const parent_email = document.getElementById('student-email').value;
+
+            await fetch(`${API_URL}/students`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'auth-token': getToken() },
+                body: JSON.stringify({ name, grade, parent_email })
+            });
+            alert('Estudiante registrado');
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.text("Reporte General del Colegio", 20, 20);
+            doc.text(`Total de Estudiantes: ${statsData.total_students}`, 20, 30);
+
+            // Tabla de Notas Promedio
+            doc.autoTable({
+                startY: 40,
+                head: [['Materia', 'Promedio']],
+                body: statsData.grades_avg.map(g => [g.subject, parseFloat(g.average).toFixed(2)]),
+            });
+
+            // Tabla de Pagos
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 10,
+                head: [['Estado de Pago', 'Cantidad']],
+                body: statsData.payments_distribution.map(p => [p.status, p.count]),
+            });
+
+            doc.save('reporte_escolar.pdf');
+        }
+
+        window.onload = initializeDashboard;
+    </script>
+</body>
+</html>

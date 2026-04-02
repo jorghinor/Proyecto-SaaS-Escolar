@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Libreta - Portal del Estudiante</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .grade-excellent { background-color: #dcfce7; color: #166534; }
+        .grade-good { background-color: #dbeafe; color: #1e40af; }
+        .grade-average { background-color: #fef3c7; color: #92400e; }
+        .grade-poor { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">Mi Libreta de Calificaciones</h1>
+                    <p class="text-sm text-gray-500" id="student-name">Cargando...</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="text-red-600 hover:text-red-800 font-medium flex items-center">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                Cerrar Sesión
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Student Info Card -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">Estudiante</p>
+                    <p class="text-lg font-semibold text-gray-800" id="info-name">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Grado</p>
+                    <p class="text-lg font-semibold text-gray-800" id="info-grade">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Gestión</p>
+                    <p class="text-lg font-semibold text-gray-800" id="info-year">-</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Promedio General</p>
+                    <p class="text-2xl font-bold text-blue-600" id="info-average">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Period Selector -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Período</label>
+            <select id="period-select" onchange="loadReportCard()" 
+                class="w-full md:w-1/3 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
+                <option value="">Cargando períodos...</option>
+            </select>
+        </div>
+
+        <!-- Grades Table -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800">Calificaciones</h2>
+                <button onclick="downloadPDF()" id="download-btn" disabled
+                    class="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-green-800 transition duration-200 flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Descargar PDF
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materia</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nota</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Conducta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grades-table-body" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                Selecciona un período para ver tus calificaciones
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div id="comments-section" class="bg-white rounded-xl shadow-lg p-6 mt-8 hidden">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Observaciones</h3>
+            <p id="comments-text" class="text-gray-600"></p>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:3003';
+        let currentReportCardId = null;
+        
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('studentToken');
+            if (!token) {
+                window.location.href = 'student-login.html';
+                return null;
+            }
+            return token;
+        }
+        
+        // Get student info
+        function getStudentInfo() {
+            const info = localStorage.getItem('studentInfo');
+            return info ? JSON.parse(info) : null;
+        }
+        
+        // Logout
+        function logout() {
+            localStorage.removeItem('studentToken');
+            localStorage.removeItem('studentInfo');
+            window.location.href = 'student-login.html';
+        }
+        
+        // Load student periods
+        async function loadPeriods() {
+            const token = checkAuth();
+            const studentInfo = getStudentInfo();
+            
+            if (!studentInfo) {
+                logout();
+                return;
+            }
+            
+            // Display student info
+            document.getElementById('student-name').textContent = studentInfo.name;
+            document.getElementById('info-name').textContent = studentInfo.name;
+            document.getElementById('info-grade').textContent = studentInfo.grade;
+            document.getElementById('info-year').textContent = new Date().getFullYear();
+            
+            try {
+                const response = await fetch(`${API_URL}/report-cards/student/${studentInfo.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load periods');
+                
+                const reportCards = await response.json();
+                const select = document.getElementById('period-select');
+                
+                if (reportCards.length === 0) {
+                    select.innerHTML = '<option value="">No hay libretas disponibles</option>';
+                    return;
+                }
+                
+                select.innerHTML = reportCards.map(rc => 
+                    `<option value="${rc.id}">${rc.period_name} - ${rc.year}</option>`
+                ).join('');
+                
+                // Load first report card automatically
+                if (reportCards.length > 0) {
+                    select.value = reportCards[0].id;
+                    loadReportCard();
+                }
+                
+            } catch (err) {
+                console.error('Error loading periods:', err);
+                document.getElementById('period-select').innerHTML = 
+                    '<option value="">Error al cargar períodos</option>';
+            }
+        }
+        
+        // Load report card details
+        async function loadReportCard() {
+            const token = checkAuth();
+            const reportCardId = document.getElementById('period-select').value;
+            
+            if (!reportCardId) return;
+            
+            currentReportCardId = reportCardId;
+            
+            try {
+                const response = await fetch(`${API_URL}/report-cards/${reportCardId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load report card');
+                
+                const data = await response.json();
+                
+                // Update average
+                document.getElementById('info-average').textContent = 
+                    data.general_average ? data.general_average.toFixed(2) : '-';
+                
+                // Populate grades table
+                const tbody = document.getElementById('grades-table-body');
+                
+                if (data.details && data.details.length > 0) {
+                    tbody.innerHTML = data.details.map(detail => {
+                        const gradeClass = getGradeClass(detail.score);
+                        const literalGrade = getLiteralGrade(detail.score);
+                        
+                        return `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    ${detail.subject_name}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="inline-flex px-3 py-1 rounded-full text-sm font-semibold ${gradeClass}">
+                                        ${detail.score}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                    ${literalGrade}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-600">
+                                    ${detail.behavior_grade || '-'}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                                No hay calificaciones registradas para este período
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Show comments if any
+                const commentsSection = document.getElementById('comments-section');
+                if (data.comments) {
+                    document.getElementById('comments-text').textContent = data.comments;
+                    commentsSection.classList.remove('hidden');
+                } else {
+                    commentsSection.classList.add('hidden');
+                }
+                
+                // Enable download button
+                document.getElementById('download-btn').disabled = false;
+                
+            } catch (err) {
+                console.error('Error loading report card:', err);
+            }
+        }
+        
+        // Download PDF
+        async function downloadPDF() {
+            if (!currentReportCardId) return;
+            
+            const token = checkAuth();
+            
+            try {
+                const response = await fetch(`${API_URL}/report-cards/${currentReportCardId}/pdf`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to generate PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `libreta_${new Date().getFullYear()}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+            } catch (err) {
+                console.error('Error downloading PDF:', err);
+                alert('Error al descargar el PDF. Intenta nuevamente.');
+            }
+        }
+        
+        // Helper functions
+        function getGradeClass(score) {
+            if (score >= 6) return 'grade-excellent';
+            if (score >= 5) return 'grade-good';
+            if (score >= 4) return 'grade-average';
+            return 'grade-poor';
+        }
+        
+        function getLiteralGrade(score) {
+            if (score >= 6) return 'EXCELENTE';
+            if (score >= 5) return 'MUY BUENO';
+            if (score >= 4) return 'BUENO';
+            if (score >= 3) return 'SUFICIENTE';
+            return 'INSUFICIENTE';
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadPeriods);
+    </script>
+</body>
+</html>
